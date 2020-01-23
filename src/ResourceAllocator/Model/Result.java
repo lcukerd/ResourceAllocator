@@ -4,6 +4,6 @@ import ResourceAllocator.Model.Server;
 
 public class Result {
   public String region;
-  public float cost;
+  public double cost;
   public Server server;
 }

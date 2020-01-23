@@ -3,14 +3,14 @@ package ResourceAllocator.Model;
 public class Region {
 
   private String region;
-  private float large;
-  private float xlarge;
-  private float _2xlarge;
-  private float _4xlarge;
-  private float _8xlarge;
-  private float _10xlarge;
+  private double large;
+  private double xlarge;
+  private double _2xlarge;
+  private double _4xlarge;
+  private double _8xlarge;
+  private double _10xlarge;
 
-  public Region(String region, float large, float xlarge, float _2xlarge, float _4xlarge, float _8xlarge, float _10xlarge) {
+  public Region(String region, double large, double xlarge, double _2xlarge, double _4xlarge, double _8xlarge, double _10xlarge) {
     this.region = region;
     this.large = large;
     this.xlarge = xlarge;
@@ -24,27 +24,27 @@ public class Region {
 	  return region;
   }
 
-  public float getLarge() {
+  public double getLarge() {
     return large;
   }
 
-  public float getXlarge() {
+  public double getXlarge() {
     return xlarge;
   }
 
-  public float get2xlarge() {
+  public double get2xlarge() {
     return _2xlarge;
   }
 
-  public float get4xlarge() {
+  public double get4xlarge() {
     return _4xlarge;
   }
 
-  public float get8xlarge() {
+  public double get8xlarge() {
     return _8xlarge;
   }
 
-  public float get10xlarge() {
+  public double get10xlarge() {
     return _10xlarge;
   }
 }
