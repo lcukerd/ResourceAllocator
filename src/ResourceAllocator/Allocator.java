@@ -10,10 +10,12 @@ import ResourceAllocator.Model.Result;
 import ResourceAllocator.Model.Server;
 
 public class Allocator {
-	private static String instances;
+	// Made public just to show Unit Test
+	public static String instances;
 
 	// Convert Json List to String
-	private static String getJSONString(ArrayList<Result> results) {
+	// Made public just to show Unit Test
+	public static String getJSONString(ArrayList<Result> results) {
 		JSONArray outputArr = new JSONArray();
 		
 		// Sort list by cost
@@ -213,8 +215,9 @@ public class Allocator {
 		return r;
 	}
 
-	// Main Allocator fn
-	private static String get_costs(int hours, int cpus, double price) {
+	// Main Allocator fn: Calls fns based on user query
+	// Made public just to show Unit Test
+	public static String get_costs(int hours, int cpus, double price) {
 		ArrayList<Region> regions = parseInstances();
 		ArrayList<Result> results = new ArrayList<>();
 		if (cpus == -1) {
@@ -248,5 +251,7 @@ public class Allocator {
 		System.out.println(get_costs(24, 115, -1));
 		System.out.println(get_costs(8, -1, 29));
 		System.out.println(get_costs(7, 214, 205));
+		
+		sc.close();
 	}
 }
