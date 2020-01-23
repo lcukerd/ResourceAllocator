@@ -12,15 +12,31 @@ import ResourceAllocator.Model.Server;
 public class Allocator {
 	private static String instances;
 
+	// Convert Json List to String
 	private static String getJSONString(ArrayList<Result> results) {
 		JSONArray outputArr = new JSONArray();
 		
-		for (Result result: results) {
+		// Sort list by cost
+		results.sort(new Comparator<Result>() {
+
+			@Override
+			public int compare(Result o1, Result o2) {
+				if (o1.cost < o2.cost)
+					return -1;
+				else if (o1.cost > o2.cost)
+					return 1;
+				else
+					return 0;
+			}
+			
+		});
+
+		for (Result result : results) {
 			JSONObject output = new JSONObject();
 			output.put("region", result.region);
-			output.put("total_cost",result.cost);
+			output.put("total_cost", result.cost);
 			JSONObject servers = new JSONObject();
-			
+
 			if (result.server._10xlarge != 0) {
 				servers.put("10xlarge", result.server._10xlarge);
 			}
@@ -40,15 +56,15 @@ public class Allocator {
 				servers.put("large", result.server.large);
 			}
 			output.put("servers", servers);
-			
+
 			outputArr.add(output);
 		}
-		
 
 		return outputArr.toJSONString();
 
 	}
 
+	// Parse Json String to Objects
 	private static ArrayList<Region> parseInstances() {
 		ArrayList<Region> regions = new ArrayList<>();
 		try {
@@ -59,12 +75,25 @@ public class Allocator {
 				String location = locations.next();
 
 				JSONObject servers = (JSONObject) top.get(location);
-				double large = (double) servers.get("large");
-				double xlarge = (double) servers.get("xlarge");
-				double _2xlarge = (double) servers.get("2xlarge");
-				double _4xlarge = (double) servers.get("4xlarge");
-				double _8xlarge = (double) servers.get("8xlarge");
-				double _10xlarge = (double) servers.get("10xlarge");
+				double large = -1;
+				double xlarge = -1;
+				double _2xlarge = -1;
+				double _4xlarge = -1;
+				double _8xlarge = -1;
+				double _10xlarge = -1;
+
+				if (servers.containsKey("large"))
+					large = Double.valueOf(servers.get("large").toString());
+				if (servers.containsKey("xlarge"))
+					xlarge = Double.valueOf(servers.get("xlarge").toString());
+				if (servers.containsKey("2xlarge"))
+					_2xlarge = Double.valueOf(servers.get("2xlarge").toString());
+				if (servers.containsKey("4xlarge"))
+					_4xlarge = Double.valueOf(servers.get("4xlarge").toString());
+				if (servers.containsKey("8xlarge"))
+					_8xlarge = Double.valueOf(servers.get("8xlarge").toString());
+				if (servers.containsKey("10xlarge"))
+					_10xlarge = Double.valueOf(servers.get("10xlarge").toString());
 
 				Region region = new Region(location, large, xlarge, _2xlarge, _4xlarge, _8xlarge, _10xlarge);
 				regions.add(region);
@@ -79,102 +108,112 @@ public class Allocator {
 
 	}
 
+	// Allocator when max cpu count is not given by user
 	private static Result getCPU(Region region, int hours, double price) {
 		Result r = new Result();
 		Server s = new Server();
 		price /= hours;
-		double originalPrice = price; 
+		double originalPrice = price;
 
 		while (price >= region.getLarge()) {
-			if (price >= region.get10xlarge()) {
+			if (region.get10xlarge() > 0 && price >= region.get10xlarge()) {
 
 				s._10xlarge = (int) (price / region.get10xlarge());
 				price = price % region.get10xlarge();
 
-			} else if (price >= region.get8xlarge()) {
+			} else if (region.get8xlarge() > 0 && price >= region.get8xlarge()) {
 
 				s._8xlarge = (int) (price / region.get8xlarge());
 				price = price % region.get8xlarge();
 
-			} else if (price >= region.get4xlarge()) {
+			} else if (region.get4xlarge() > 0 && price >= region.get4xlarge()) {
 
 				s._4xlarge = (int) (price / region.get4xlarge());
 				price = price % region.get4xlarge();
 
-			} else if (price >= region.get2xlarge()) {
+			} else if (region.get2xlarge() > 0 && price >= region.get2xlarge()) {
 
 				s._2xlarge = (int) (price / region.get2xlarge());
 				price = price % region.get2xlarge();
 
-			} else if (price >= region.get2xlarge()) {
+			} else if (region.getXlarge() > 0 && price >= region.get2xlarge()) {
 
 				s.xlarge = (int) (price / region.getXlarge());
 				price = price % region.getXlarge();
 
-			} else {
-				
+			} else if (region.getLarge() > 0) {
+
 				s.large = (int) (price / region.getLarge());
 				price = price % region.getLarge();
+			} else {
+				break;
 			}
 		}
-		
+
 		r.region = region.getRegion();
-		r.cost = (originalPrice - price) * hours;
+		r.cost = (float) (originalPrice - price) * hours;
 		r.server = s;
 		return r;
 	}
 
+	// Allocator when cpu count is given by user
 	private static Result getPrice(Region region, int hours, int cpus) {
 		Result r = new Result();
 		Server s = new Server();
 		double price = 0;
 
 		while (cpus > 0) {
-			if (cpus >= 32) {
+			if (region.get10xlarge() > 0 && cpus >= 32) {
 
 				s._10xlarge = (int) (cpus / 32);
 				cpus = cpus % 32;
 				price += s._10xlarge * region.get10xlarge();
 
-			} else if (cpus >= 16) {
+			} else if (region.get8xlarge() > 0 && cpus >= 16) {
 
 				s._8xlarge = (int) (cpus / 16);
 				cpus = cpus % 16;
-				price += s._10xlarge * region.get8xlarge();
+				price += s._8xlarge * region.get8xlarge();
 
-			} else if (cpus >= 8) {
+			} else if (region.get4xlarge() > 0 && cpus >= 8) {
 
 				s._4xlarge = (int) (cpus / 8);
 				cpus = cpus % 8;
-				price += s._10xlarge * region.get4xlarge();
+				price += s._4xlarge * region.get4xlarge();
 
-			} else if (cpus >= 4) {
+			} else if (region.get2xlarge() > 0 && cpus >= 4) {
 
 				s._2xlarge = (int) (cpus / 4);
 				cpus = cpus % 4;
-				price += s._10xlarge * region.get2xlarge();
+				price += s._2xlarge * region.get2xlarge();
 
-			} else if (cpus >= 2) {
+			} else if (region.getXlarge() > 0 && cpus >= 2) {
 
 				s.xlarge = (int) (cpus / 2);
 				cpus = cpus % 2;
-				price += s._10xlarge * region.getXlarge();
+				price += s.xlarge * region.getXlarge();
 
-			} else {
+			} else if (region.getLarge() > 0){
 
 				s.large = cpus;
 				cpus = 0;
-				price += s._10xlarge * region.getLarge();
+				price += s.large * region.getLarge();
 
+			} else {
+				break;
 			}
 		}
 		
+		if (cpus > 0)
+			return null;
+
 		r.region = region.getRegion();
-		r.cost = price * hours;
+		r.cost = (float) (price * hours);
 		r.server = s;
 		return r;
 	}
 
+	// Main Allocator fn
 	private static String get_costs(int hours, int cpus, double price) {
 		ArrayList<Region> regions = parseInstances();
 		ArrayList<Result> results = new ArrayList<>();
@@ -184,16 +223,22 @@ public class Allocator {
 			}
 		} else if (price == -1) {
 			for (Region r : regions) {
-				results.add(getPrice(r, hours, cpus));
+				Result result = getPrice(r, hours, cpus);
+				
+				// When CPU can't be met
+				if (result != null)
+					results.add(result);
 			}
 		} else {
 			for (Region r : regions) {
 				Result result = getPrice(r, hours, cpus);
+				
+				// Don't add if price is more than what was asked by user
 				if (result.cost <= price)
 					results.add(result);
 			}
 		}
-		
+
 		return getJSONString(results);
 	}
 
@@ -202,6 +247,6 @@ public class Allocator {
 		instances = sc.nextLine();
 		System.out.println(get_costs(24, 115, -1));
 		System.out.println(get_costs(8, -1, 29));
-		System.out.println(get_costs(7, 214, 95));
+		System.out.println(get_costs(7, 214, 205));
 	}
 }
